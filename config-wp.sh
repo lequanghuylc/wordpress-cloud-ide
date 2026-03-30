@@ -107,8 +107,46 @@ find "${log_dir}" -maxdepth 1 -type f -name 'debug.log.*' -mtime +7 -delete
 EOF
 chmod +x /etc/cron.daily/wordpress-debug-log-rotate
 
+# HTTPS behind reverse proxy (Railway, etc.): set $_SERVER['HTTPS'] from forwarded headers so WordPress
+# generates https URLs and avoids mixed-content blocking.
+proxy_block_file="$(mktemp)"
+trap 'rm -f "${salt_file}" "${tmp_config_file}" "${tmp_wp_debug_file}" "${proxy_block_file}"' EXIT
+cat <<'PROXYPHP' > "${proxy_block_file}"
+
+/* HTTPS behind reverse proxy — config-wp.sh:begin */
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+    $proto = strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'])[0]));
+    if ($proto === 'https') {
+        $_SERVER['HTTPS'] = 'on';
+    }
+}
+if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+    $_SERVER['HTTPS'] = 'on';
+}
+/* HTTPS behind reverse proxy — config-wp.sh:end */
+PROXYPHP
+
+tmp_proxy_file="$(mktemp)"
+trap 'rm -f "${salt_file}" "${tmp_config_file}" "${tmp_wp_debug_file}" "${proxy_block_file}" "${tmp_proxy_file}"' EXIT
+awk -v proxy_file="${proxy_block_file}" '
+  BEGIN {
+    while ((getline line < proxy_file) > 0) proxy_block = proxy_block line "\n"
+    close(proxy_file)
+    inserted = 0
+  }
+  /HTTPS behind reverse proxy — config-wp.sh:begin/,/HTTPS behind reverse proxy — config-wp.sh:end/ { next }
+  /^<\?php/ && !inserted {
+    print
+    printf "%s", proxy_block
+    inserted = 1
+    next
+  }
+  { print }
+' "${wp_config_file}" > "${tmp_proxy_file}"
+mv "${tmp_proxy_file}" "${wp_config_file}"
+
 # Ensure PHP-FPM (www-data) can read wp-config.php.
 chown www-data:www-data "${wp_config_file}" || true
 chmod 0644 "${wp_config_file}" || true
-echo "Database, salts, WP debug config, and log rotation are updated."
+echo "Database, salts, WP debug config, HTTPS proxy, and log rotation are updated."
 
