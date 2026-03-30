@@ -1,0 +1,14 @@
+[supervisord]
+nodaemon=true
+
+[program:php-fpm]
+command=/bin/bash -lc "mkdir -p /run/php && chown www-data:www-data /run/php; pkill -x php-fpm8.1 2>/dev/null || true; rm -f /run/php/php8.1-fpm.pid /run/php/php8.1-fpm.sock; php-fpm8.1 -F -R"
+
+[program:pm2]
+command=pm2 start /root/c9sdk/server.js --name="c9sdk" -- -w / -l 0.0.0.0 -p 3399 -a c9sdk:%(ENV_C9SDK_PASSWORD)s
+
+[program:nginx]
+command=/bin/bash -lc "nginx -s quit 2>/dev/null || true; nginx -g 'daemon off;'"
+
+[program:cron]
+command=cron -f

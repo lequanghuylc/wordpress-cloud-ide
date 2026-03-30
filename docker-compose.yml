@@ -1,0 +1,49 @@
+services:
+  wordpress-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wordpress-with-file-manager
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "3399:3399"
+    environment:
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-changeme}
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_PORT: 3306
+      WORDPRESS_INITIAL_VERSION: ${WORDPRESS_INITIAL_VERSION:-latest}
+      C9SDK_PASSWORD: ${C9SDK_PASSWORD:-changeme}
+    volumes:
+      - wordpress_data:/var/www/html/wordpress
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-changeme}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-rootpass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  wordpress_data:
+  mysql_data:
