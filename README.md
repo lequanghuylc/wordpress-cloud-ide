@@ -7,6 +7,8 @@ This repository exists to provide a developer-first WordPress runtime with full 
 
 Docker image that serves **WordPress** via **nginx + PHP-FPM** on port **8080**, plus a bundled **c9sdk** (Cloud9) file manager/server started via **pm2**.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/dSgrm2?referralCode=kmHOLH&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 ## Ports
 
 - **WordPress (nginx)**: container `8080` (nginx `listen 8080;`)
