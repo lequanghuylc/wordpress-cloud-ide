@@ -20,6 +20,13 @@ if [ -n "${WORDPRESS_DB_PORT:-}" ]; then
   db_host="${WORDPRESS_DB_HOST}:${WORDPRESS_DB_PORT}"
 fi
 
+wp_home_escaped="${WP_HOME:-}"
+wp_siteurl_escaped="${WP_SITEURL:-}"
+wp_home_escaped="${wp_home_escaped//\\/\\\\}"
+wp_home_escaped="${wp_home_escaped//\'/\\\'}"
+wp_siteurl_escaped="${wp_siteurl_escaped//\\/\\\\}"
+wp_siteurl_escaped="${wp_siteurl_escaped//\'/\\\'}"
+
 sed -i "s/database_name_here/${WORDPRESS_DB_NAME}/g" "${wp_config_file}"
 sed -i "s/username_here/${WORDPRESS_DB_USER}/g" "${wp_config_file}"
 sed -i "s/password_here/${WORDPRESS_DB_PASSWORD}/g" "${wp_config_file}"
@@ -144,6 +151,45 @@ awk -v proxy_file="${proxy_block_file}" '
   { print }
 ' "${wp_config_file}" > "${tmp_proxy_file}"
 mv "${tmp_proxy_file}" "${wp_config_file}"
+
+# Optionally pin WordPress site URLs from env so reverse-proxy domain changes do not keep redirecting
+# to the original stored URL.
+wp_url_block_file="$(mktemp)"
+trap 'rm -f "${salt_file}" "${tmp_config_file}" "${tmp_wp_debug_file}" "${proxy_block_file}" "${tmp_proxy_file}" "${wp_url_block_file}"' EXIT
+cat <<EOF > "${wp_url_block_file}"
+
+/* WordPress site URLs from env — config-wp.sh:begin */
+if (!empty('${wp_home_escaped}')) {
+    define('WP_HOME', '${wp_home_escaped}');
+}
+if (!empty('${wp_siteurl_escaped}')) {
+    define('WP_SITEURL', '${wp_siteurl_escaped}');
+}
+/* WordPress site URLs from env — config-wp.sh:end */
+EOF
+
+tmp_wp_url_file="$(mktemp)"
+trap 'rm -f "${salt_file}" "${tmp_config_file}" "${tmp_wp_debug_file}" "${proxy_block_file}" "${tmp_proxy_file}" "${wp_url_block_file}" "${tmp_wp_url_file}"' EXIT
+awk -v wp_url_file="${wp_url_block_file}" '
+  BEGIN {
+    while ((getline line < wp_url_file) > 0) wp_url_block = wp_url_block line "\n"
+    close(wp_url_file)
+    inserted = 0
+  }
+  /WordPress site URLs from env — config-wp.sh:begin/,/WordPress site URLs from env — config-wp.sh:end/ { next }
+  /^define\(\x27(WP_HOME|WP_SITEURL)\x27/ { next }
+  /That\x27s all, stop editing!/ && !inserted {
+    printf "%s", wp_url_block
+    inserted = 1
+  }
+  { print }
+  END {
+    if (!inserted) {
+      printf "%s", wp_url_block
+    }
+  }
+' "${wp_config_file}" > "${tmp_wp_url_file}"
+mv "${tmp_wp_url_file}" "${wp_config_file}"
 
 # Ensure PHP-FPM (www-data) can read wp-config.php.
 chown www-data:www-data "${wp_config_file}" || true

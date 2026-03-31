@@ -26,6 +26,8 @@ These must be provided at runtime (e.g. `docker run -e ...`).
 - **`WORDPRESS_DB_HOST`**: database host (e.g. `db`, `127.0.0.1`, `mysql`)
 - **`WORDPRESS_DB_PORT`** (optional): database port (e.g. `3306`). If set, `wp-config.php` will use `${WORDPRESS_DB_HOST}:${WORDPRESS_DB_PORT}`.
 - **`WORDPRESS_INITIAL_VERSION`** (optional): WordPress version to install on first initialization. Use `latest` (default) or an exact version like `6.6.2`.
+- **`WP_HOME`** (optional): public site URL to force in `wp-config.php`. Useful when the container runs behind a reverse proxy or when the domain changes.
+- **`WP_SITEURL`** (optional): WordPress core URL to force in `wp-config.php`. Set this alongside `WP_HOME` to stop redirects back to the original stored URL.
 
 ### c9sdk
 
@@ -51,6 +53,8 @@ docker run --rm \
   -e WORDPRESS_DB_HOST=db \
   -e WORDPRESS_DB_PORT=3306 \
   -e WORDPRESS_INITIAL_VERSION=latest \
+  -e WP_HOME=http://localhost:8080 \
+  -e WP_SITEURL=http://localhost:8080 \
   -e C9SDK_PASSWORD=changeme \
   wordpress-with-file-manager
 ```
@@ -89,6 +93,8 @@ docker run --rm \
   -e WORDPRESS_DB_PASSWORD=changeme \
   -e WORDPRESS_DB_HOST=host.docker.internal \
   -e WORDPRESS_DB_PORT=3306 \
+  -e WP_HOME=http://localhost:8080 \
+  -e WP_SITEURL=http://localhost:8080 \
   -e C9SDK_PASSWORD=changeme \
   wp-local-test
 ```
@@ -106,6 +112,8 @@ WORDPRESS_DB_PASSWORD=changeme
 WORDPRESS_DB_HOST=db
 WORDPRESS_DB_PORT=3306
 WORDPRESS_INITIAL_VERSION=latest
+WP_HOME=http://localhost:8080
+WP_SITEURL=http://localhost:8080
 C9SDK_PASSWORD=changeme
 ```
 
@@ -142,6 +150,8 @@ docker run --rm --name wp-app --network wp-net \
   -e WORDPRESS_DB_PASSWORD=changeme \
   -e WORDPRESS_DB_HOST=wp-mysql \
   -e WORDPRESS_DB_PORT=3306 \
+  -e WP_HOME=http://localhost:8080 \
+  -e WP_SITEURL=http://localhost:8080 \
   -e C9SDK_PASSWORD=changeme \
   wordpress-with-file-manager
 ```
@@ -156,5 +166,6 @@ docker network rm wp-net
 ## Notes
 
 - On container start, `/root/config-wp.sh` updates `wp-config.php` DB settings and refreshes WordPress salts using `https://api.wordpress.org/secret-key/1.1/salt/`.
+- If `WP_HOME` and/or `WP_SITEURL` are set, `/root/config-wp.sh` writes them into `wp-config.php` so WordPress uses the current public URL instead of redirecting to an older stored domain.
 - `WORDPRESS_INITIAL_VERSION` is only used when `/var/www/html/wordpress` is not already initialized (for example, first run with an empty volume).
 
