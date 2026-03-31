@@ -29,7 +29,6 @@ RUN mkdir -p /var/www/html
 # configure nginx
 COPY nginx-conf/wordpress.conf /etc/nginx/sites-enabled/
 COPY nginx-conf/project.conf /etc/nginx/sites-enabled/
-RUN rm /etc/nginx/sites-enabled/*.template
 
 # WordPress config bootstrap script (used by CMD).
 COPY config-wp.sh /root/config-wp.sh
