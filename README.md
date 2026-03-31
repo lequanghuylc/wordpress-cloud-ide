@@ -168,4 +168,10 @@ docker network rm wp-net
 - On container start, `/root/config-wp.sh` updates `wp-config.php` DB settings and refreshes WordPress salts using `https://api.wordpress.org/secret-key/1.1/salt/`.
 - If `WP_HOME` and/or `WP_SITEURL` are set, `/root/config-wp.sh` writes them into `wp-config.php` so WordPress uses the current public URL instead of redirecting to an older stored domain.
 - `WORDPRESS_INITIAL_VERSION` is only used when `/var/www/html/wordpress` is not already initialized (for example, first run with an empty volume).
+- instructions to use WP CLI: you need to open Cloud9 IDE and open a terminal there
 
+```bash
+su -s /bin/bash www-data
+cd /var/www/html/wordpress
+wp core version
+```

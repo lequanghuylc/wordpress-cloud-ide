@@ -37,6 +37,10 @@ RUN chmod +x /root/config-wp.sh
 # Supervisor config (uses %(ENV_...)s expansion at runtime).
 COPY supervisord.conf.template /etc/supervisor/conf.d/supervisord.conf
 
+# Install WP CLI
+RUN curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp \
+    && chmod +x /usr/local/bin/wp
+
 CMD ["/bin/bash", "-lc", "set -euo pipefail; \
     mkdir -p /var/www/html; \
     if [ ! -f /var/www/html/wordpress/wp-settings.php ]; then \
