@@ -5,7 +5,13 @@ nodaemon=true
 command=/bin/bash -lc "mkdir -p /run/php && chown www-data:www-data /run/php; pkill -x php-fpm8.1 2>/dev/null || true; rm -f /run/php/php8.1-fpm.pid /run/php/php8.1-fpm.sock; php-fpm8.1 -F -R"
 
 [program:pm2]
-command=pm2 start /root/c9sdk/server.js --name="c9sdk" -- -w / -l 0.0.0.0 -p 3399 -a c9sdk:%(ENV_C9SDK_PASSWORD)s
+command=pm2-runtime start /root/c9sdk/server.js --name c9sdk -- -w / -l 0.0.0.0 -p 3399 -a c9sdk:%(ENV_C9SDK_PASSWORD)s
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stdout_logfile_backups=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+stderr_logfile_backups=0
 
 [program:nginx]
 command=/bin/bash -lc "rm -f /etc/nginx/sites-enabled/*.template 2>/dev/null || true; nginx -s quit 2>/dev/null || true; nginx -g 'daemon off;'"
