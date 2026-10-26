@@ -2,7 +2,7 @@
 nodaemon=true
 
 [program:php-fpm]
-command=/bin/bash -lc "mkdir -p /run/php && chown www-data:www-data /run/php; pkill -x php-fpm8.1 2>/dev/null || true; rm -f /run/php/php8.1-fpm.pid /run/php/php8.1-fpm.sock; php-fpm8.1 -F -R"
+command=/bin/bash -lc "mkdir -p /run/php && chown www-data:www-data /run/php; pkill -x php-fpm8.4 2>/dev/null || true; rm -f /run/php/php8.4-fpm.pid /run/php/php8.4-fpm.sock; php-fpm8.4 -F -R"
 
 [program:pm2]
 command=pm2-runtime start /root/c9sdk/server.js --name c9sdk -- -w / -l :: -p 3399 -a c9sdk:%(ENV_C9SDK_PASSWORD)s

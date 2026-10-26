@@ -3,7 +3,10 @@ FROM lequanghuylc/c9sdk-pm2-ubuntu:latest
 WORKDIR /var/www/html
 ENV WORDPRESS_INITIAL_VERSION=latest
 
-# Install runtime dependencies for WordPress and process management.
+# PHP 8.4.27 fixes PHP2Shell (CVE-2026-109618, CVE-2026-109619).
+# The base image is Ubuntu 22.04, which does not ship this release, so pin Ondřej Surý's Jammy build.
+ARG PHP_VERSION=8.4.27
+ARG PHP_DEB_VERSION=8.4.27-1+ubuntu22.04.1+deb.sury.org+1
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         ca-certificates \
@@ -11,16 +14,24 @@ RUN apt-get update \
         curl \
         gettext-base \
         ghostscript \
-        php8.1-bcmath \
-        php8.1-curl \
-        php8.1-fpm \
-        php8.1-imagick \
-        php8.1-intl \
-        php8.1-mbstring \
-        php8.1-mysql \
-        php8.1-xml \
-        php8.1-zip \
+        gnupg \
+        software-properties-common \
         supervisor \
+    && add-apt-repository -y ppa:ondrej/php \
+    && apt-get update \
+    && echo "Installing PHP ${PHP_DEB_VERSION}" \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        php8.4-bcmath=${PHP_DEB_VERSION} \
+        php8.4-cli=${PHP_DEB_VERSION} \
+        php8.4-curl=${PHP_DEB_VERSION} \
+        php8.4-fpm=${PHP_DEB_VERSION} \
+        php8.4-imagick \
+        php8.4-intl=${PHP_DEB_VERSION} \
+        php8.4-mbstring=${PHP_DEB_VERSION} \
+        php8.4-mysql=${PHP_DEB_VERSION} \
+        php8.4-xml=${PHP_DEB_VERSION} \
+        php8.4-zip=${PHP_DEB_VERSION} \
+    && php -r "exit(PHP_VERSION === '${PHP_VERSION}' ? 0 : 1);" \
     && rm -rf /var/lib/apt/lists/*
 
 # Keep runtime directory ready; WordPress is initialized on container start.
